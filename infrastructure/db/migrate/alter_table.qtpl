@@ -1,0 +1,11 @@
+{% import (
+    "github.com/Alexandrhub/cli-orm-gen/infrastructure/db/scanner"
+) %}
+
+{% func AlterTable(field scanner.Field) %}
+alter table {%s field.Table.Name %}
+	add {%s field.Name %} {%s field.Type %} {%s field.Default %};
+
+{% if field.Constraint.Index %}
+    create {% if field.Constraint.Unique %}unique {% endif %}index {%s field.Table.Name %}_{%s field.Constraint.Field.Name %}_idx
+     on {%s field.Table.Name %} ({%s field.Constraint.Field.Name %});{% endif %}{% endfunc %}

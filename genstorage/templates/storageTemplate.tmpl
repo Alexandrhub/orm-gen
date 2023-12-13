@@ -1,0 +1,75 @@
+package storage
+
+import (
+	"context"
+	"fmt"
+	"time"
+	"github.com/Alexandrhub/cli-orm-gen/db/adapter"
+	"github.com/Alexandrhub/cli-orm-gen/genstorage/models"
+	"github.com/Alexandrhub/cli-orm-gen/utils"
+)
+
+type {{ .EntityNameUppercase }}Storage struct {
+    adapter adapter.SQLAdapter
+}
+
+func New{{ .EntityNameUppercase}}Storage(sqlAdapter adapter.SQLAdapter) {{ .EntityNameUppercase }}Storage {
+    return {{ .EntityNameUppercase }}Storage{adapter: sqlAdapter}
+}
+
+func ({{ .EntityFirstLetter }} *{{ .EntityNameUppercase }}Storage) Create(ctx context.Context, dto models.{{ .EntityName }}) error {
+    return {{ .EntityFirstLetter }}.adapter.Create(ctx, &dto)
+}
+
+func ({{ .EntityFirstLetter }} *{{ .EntityNameUppercase }}Storage) Update(ctx context.Context, dto models.{{ .EntityName }}) error {
+	return {{ .EntityFirstLetter }}.adapter.Update(
+		ctx,
+		&dto,
+		utils.Condition{
+			Equal: map[string]interface{}{"id": dto.GetID()},
+		},
+		utils.Update,
+	)
+}
+
+func ({{ .EntityFirstLetter }} *{{ .EntityNameUppercase }}Storage) GetByID(ctx context.Context, {{ .EntityNameLowercase }}ID int) (models.{{ .EntityName }}, error) {
+	var list []models.{{ .EntityName }}
+	err := {{ .EntityFirstLetter }}.adapter.List(ctx, &list, "{{ .TableName }}", utils.Condition{
+		Equal: map[string]interface{}{"id": {{ .EntityNameLowercase }}ID},
+	})
+	if err != nil {
+		return models.{{ .EntityName }}{}, err
+	}
+	if len(list) < 1 {
+		return models.{{ .EntityName }}{}, fmt.Errorf("{{ .EntityNameLowercase }} storage: GetByID not found")
+	}
+	return list[0], err
+}
+
+func ({{ .EntityFirstLetter }} *{{ .EntityNameUppercase }}Storage) GetList(ctx context.Context) ([]models.{{ .EntityName }}, error) {
+	var list []models.{{ .EntityName }}
+	err := {{ .EntityFirstLetter }}.adapter.List(ctx, &list, "{{ .TableName }}", utils.Condition{Equal: map[string]interface{}{"deleted_at": nil}})
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
+func ({{ .EntityFirstLetter }} *{{ .EntityNameUppercase }}Storage) Delete(ctx context.Context, {{ .EntityNameLowercase }}ID int) error {
+	dto, err := {{ .EntityFirstLetter }}.GetByID(ctx, {{ .EntityNameLowercase }}ID)
+	if err != nil {
+		return err
+	}
+
+	dto.SetDeletedAt(time.Now())
+
+	return {{ .EntityFirstLetter }}.adapter.Update(
+		ctx,
+		&dto,
+		utils.Condition{
+			Equal: map[string]interface{}{"id": dto.GetID()},
+		},
+		utils.Update,
+	)
+}

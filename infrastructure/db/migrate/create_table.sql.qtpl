@@ -1,0 +1,24 @@
+{% import (
+    "github.com/Alexandrhub/cli-orm-gen/infrastructure/db/scanner"
+	"github.com/Alexandrhub/cli-orm-gen/utils"
+) %}
+
+{% func CreateTable(table scanner.Table, dbConf utils.DB) %}
+create table {%s table.Name %}
+(
+	{% for i, field := range table.Fields %}
+        {%s field.Name %} {%s field.Type %} {% if dbConf.Driver != "ramsql" && dbConf.Driver != "" %}{%s field.Default %}{% endif %}{% if len(table.Fields) != i+1 %},{% endif %}
+	{% endfor %}
+);
+
+{% if len(table.Constraints) > 0 && (dbConf.Driver != "ramsql" && dbConf.Driver != "")%}
+    {% for _, constraint := range table.Constraints %}
+    create {% if constraint.Unique %}unique {% endif %}index {%s table.Name %}_{%s constraint.Field.Name %}_idx
+     on {%s table.Name %} ({%s constraint.Field.Name %});{% endfor %}
+{% endif %}
+{% if dbConf.Driver != "ramsql" && dbConf.Driver != "" %}
+    {% for _, queryOnCreate := range table.Entity.OnCreate() %}
+         {%s queryOnCreate %}
+    {% endfor %}
+{% endif %}
+{% endfunc %}
