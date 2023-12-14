@@ -5,17 +5,21 @@ import (
 	"os"
 	"testing"
 	"text/template"
-	
+
 	"github.com/Alexandrhub/cli-orm-gen/genstorage"
 )
 
 func TestStorage_CreateStorageFiles(t *testing.T) {
 	emptyTemplate := template.New("mock")
 	mockTemplate := template.New("mock")
-	mockTemplate.Parse("Mock template")
-	
+	_, err := mockTemplate.Parse("Mock template")
+	if err != nil {
+		t.Errorf("Error parsing template: %v", err)
+	}
+
 	type fields struct {
 		Entity            string
+		OutputDir         string
 		StorageTemplate   *template.Template
 		InterfaceTemplate *template.Template
 		TemplateData      genstorage.TemplateData
@@ -30,6 +34,7 @@ func TestStorage_CreateStorageFiles(t *testing.T) {
 			name: "valid data",
 			fields: fields{
 				Entity:            "test_model",
+				OutputDir:         "./storage/",
 				StorageTemplate:   mockTemplate,
 				InterfaceTemplate: mockTemplate,
 				TemplateData:      genstorage.TemplateData{},
@@ -40,6 +45,7 @@ func TestStorage_CreateStorageFiles(t *testing.T) {
 			name: "wrong template",
 			fields: fields{
 				Entity:            "test_model",
+				OutputDir:         "./storage/",
 				StorageTemplate:   emptyTemplate,
 				InterfaceTemplate: emptyTemplate,
 				TemplateData:      genstorage.TemplateData{},
@@ -50,6 +56,7 @@ func TestStorage_CreateStorageFiles(t *testing.T) {
 			name: "files already exists",
 			fields: fields{
 				Entity:            "test_model",
+				OutputDir:         "./storage/",
 				StorageTemplate:   mockTemplate,
 				InterfaceTemplate: mockTemplate,
 				TemplateData:      genstorage.TemplateData{},
@@ -57,36 +64,37 @@ func TestStorage_CreateStorageFiles(t *testing.T) {
 			setup: func() {
 				os.MkdirAll("./storage/", 0o755)
 				file, _ := os.Create("./storage/test_model_interface.go")
-				
+
 				file.Close()
 			},
 			wantErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(
 			tt.name, func(t *testing.T) {
 				// выполнение настроек перед тестом, если они определены
 				if tt.setup != nil {
 					tt.setup()
-					
+
 					// удаляем директорию после завершения теста
 					defer os.RemoveAll("./storage/")
 				}
-				
+
 				// cоздание экземпляра Storage для тестирования
 				s := &genstorage.Storage{
 					FileName:          tt.fields.Entity,
+					OutputDir:         tt.fields.OutputDir,
 					StorageTemplate:   tt.fields.StorageTemplate,
 					InterfaceTemplate: tt.fields.InterfaceTemplate,
 					TemplateData:      tt.fields.TemplateData,
 				}
-				
+
 				if err := s.CreateStorageFiles(); (err != nil) != tt.wantErr {
 					t.Errorf("CreateStorageFiles() error = %v, wantErr %v", err, tt.wantErr)
 				}
-				
+
 				// проверка создания файлов
 				if !tt.wantErr {
 					for _, filepath := range []string{
@@ -219,7 +227,7 @@ func TestGetFileName(t *testing.T) {
 			wantErr:   true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(
 			tt.name, func(t *testing.T) {

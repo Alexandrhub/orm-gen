@@ -15,12 +15,34 @@ import (
 )
 
 var (
-	fileName string
+	fileName  string
+	outputDir string
 )
 
 // init вызывается неявно при импорте пакета
 func init() {
 	flag.StringVar(&fileName, "entity", "", "Path name of entity file")
+	flag.StringVar(&outputDir, "output", "./storage/", "Output directory")
+	// Создаем новый флаг для вывода справки
+	helpFlag := flag.Bool("h", false, "Show help")
+	helpLongFlag := flag.Bool("help", false, "Show help")
+	flag.Parse()
+
+	// Если установлен флаг "--help" или "-h", выводим справку и завершаем программу
+	if *helpFlag || *helpLongFlag {
+		printHelp()
+		os.Exit(0)
+	}
+}
+
+// printHelp функция вывода справки
+func printHelp() {
+	fmt.Println("Usage:")
+	fmt.Println("  app -h           Show help")
+	fmt.Println("  app --entity=<file> --output=<directory>")
+	fmt.Println()
+	fmt.Println("Flags:")
+	flag.PrintDefaults()
 }
 
 // TemplateData структура с данными для заполнения шаблона
@@ -35,6 +57,7 @@ type TemplateData struct {
 // Storage структура с данными для работы с шаблоном
 type Storage struct {
 	FileName          string
+	OutputDir         string
 	StorageTemplate   *template.Template
 	InterfaceTemplate *template.Template
 	TemplateData      TemplateData
@@ -42,7 +65,6 @@ type Storage struct {
 
 // GetFileName функция парсинга имени файла из флага
 func GetFileName() (string, error) {
-	flag.Parse()
 	if fileName == "" {
 		flag.PrintDefaults()
 		return "", fmt.Errorf("empty flag")
@@ -59,7 +81,7 @@ func GetTableName(fileName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
+
 	var TableName string
 	// рекурсивно обходим AST
 	ast.Inspect(
@@ -87,7 +109,7 @@ func GetTableName(fileName string) (string, error) {
 			return true
 		},
 	)
-	
+
 	return TableName, nil
 }
 
@@ -100,7 +122,7 @@ func GetStructName(fileName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
+
 	var structName string
 	// рекурсивный обход дерева
 	ast.Inspect(
@@ -118,12 +140,12 @@ func GetStructName(fileName string) (string, error) {
 			return true
 		},
 	)
-	
+
 	if structName == "" {
 		log.Println("could not find struct")
 		return "", nil
 	}
-	
+
 	return structName, nil
 }
 
@@ -133,12 +155,19 @@ func NewStorage() (*Storage, error) {
 		tableName, structName string
 		err                   error
 	)
-	
+
 	fileName, err = GetFileName()
 	if err != nil {
 		return nil, err
 	}
-	
+	directory := outputDir
+	if outputDir[len(outputDir)-1] != '/' {
+		directory += "/"
+	}
+	if outputDir[0] != '.' || outputDir[1] != '/' {
+		directory = "./storage/"
+	}
+
 	tableName, err = GetTableName(fileName)
 	if err != nil {
 		return nil, fmt.Errorf("GetTableName error %v", err)
@@ -156,16 +185,16 @@ func NewStorage() (*Storage, error) {
 	}
 	// выделяем имя файла
 	fileName = strings.TrimSuffix(path.Base(fileName), ".go")
-	
+
 	// убираем возможные подчеркивания, преобразуем первую букву каждого слова tableName в верхний регистр и удаляем пробелы
 	formattedTableName := strings.ReplaceAll(strings.Title(strings.ReplaceAll(tableName, "_", " ")), " ", "")
-	
+
 	// переводим tableName в нижний регистр для заполнения шаблона
 	tableNameLowercase := strings.ToLower(formattedTableName)
-	
+
 	// выделяем первую букву tableName для заполнения шаблона
 	firstLetter := string(tableNameLowercase[0])
-	
+
 	// создаем шаблоны
 	storageTemplate, err := NewStorageTemplate()
 	if err != nil {
@@ -175,9 +204,10 @@ func NewStorage() (*Storage, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &Storage{
 		FileName:          fileName,
+		OutputDir:         directory,
 		StorageTemplate:   storageTemplate,
 		InterfaceTemplate: interfaceTemplate,
 		TemplateData: TemplateData{
@@ -210,22 +240,21 @@ func NewInterfaceTemplate() (*template.Template, error) {
 
 // CreateStorageFiles функция создания файлов в заданной директории
 func (s *Storage) CreateStorageFiles() error {
-	directory := "./storage/"
-	
+
 	// cоздаем директорию
-	err := os.MkdirAll(directory, 0755)
+	err := os.MkdirAll(s.OutputDir, 0755)
 	if err != nil {
 		return err
 	}
-	
+
 	files := []struct {
 		path     string
 		template *template.Template
 	}{
-		{filepath.Join(directory, s.FileName+"_storage.go"), s.StorageTemplate},
-		{filepath.Join(directory, s.FileName+"_interface.go"), s.InterfaceTemplate},
+		{filepath.Join(s.OutputDir, s.FileName+"_storage.go"), s.StorageTemplate},
+		{filepath.Join(s.OutputDir, s.FileName+"_interface.go"), s.InterfaceTemplate},
 	}
-	
+
 	for _, f := range files {
 		var file *os.File
 		// проверяем файл на существование
@@ -238,15 +267,15 @@ func (s *Storage) CreateStorageFiles() error {
 			defer file.Close()
 			log.Printf("File `%s` created", f.path)
 		} else {
-			return fmt.Errorf("File `%s` already exists", f.path)
+			return fmt.Errorf("file `%s` already exists", f.path)
 		}
-		
+
 		// заполняем шаблоны
 		err := f.template.Execute(file, s.TemplateData)
 		if err != nil {
 			return err
 		}
 	}
-	
+
 	return nil
 }

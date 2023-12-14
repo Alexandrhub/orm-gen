@@ -10,7 +10,7 @@
 
 ```bash
 go build cmd/cli-orm/repogen.go
-./repogen -entity="./genstorage/models/test_model.go"
+./repogen -entity="./genstorage/models/test_model.go" -output="./storage/"
 ```
 
 Все нужные файлы будут сгенерированы в корневую папку ./storage вашего проекта
