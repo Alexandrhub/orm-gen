@@ -2,13 +2,15 @@ package storage
 
 import (
 	"context"
+
 	"github.com/Alexandrhub/cli-orm-gen/genstorage/models"
+	"github.com/Alexandrhub/cli-orm-gen/utils"
 )
 
-type {{ .EntityNameUppercase }}er interface {
+type I{{ .EntityNameUppercase }}DTO interface {
 	Create(ctx context.Context, dto models.{{ .EntityName }}) error
-	Update(ctx context.Context, dto models.{{ .EntityName }}) error
-	GetByID(ctx context.Context, {{ .EntityNameLowercase }}ID int) (models.{{ .EntityName }}, error)
-	GetList(ctx context.Context) ([]models.{{ .EntityName }}, error)
-	Delete(ctx context.Context, {{ .EntityNameLowercase }}ID int) error
+	Upsert(ctx context.Context, dto []models.{{ .EntityName }}) error
+	GetCount(ctx context.Context, dto models.{{ .EntityName }}, condition utils.Condition) (uint64, error)
+	List(ctx context.Context, condition utils.Condition) ([]models.{{ .EntityName }}, error)
+	Update(ctx context.Context, dto models.{{ .EntityName }}, condition utils.Condition) error
 }

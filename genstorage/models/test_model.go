@@ -2,7 +2,7 @@ package models
 
 import (
 	"time"
-	
+
 	"github.com/Alexandrhub/cli-orm-gen/infrastructure/db/types"
 )
 
@@ -16,66 +16,20 @@ type TestDTO struct {
 }
 
 func (b *TestDTO) TableName() string {
-	return "my_test"
+	return "base"
 }
 
 func (b *TestDTO) OnCreate() []string {
 	return []string{}
 }
 
-func (b *TestDTO) SetID(id int) *TestDTO {
-	b.ID = id
-	return b
-}
-
-func (b *TestDTO) GetID() int {
-	return b.ID
-}
-
-func (b *TestDTO) SetUUID(uuid string) *TestDTO {
-	b.UUID = uuid
-	return b
-}
-
-func (b *TestDTO) GetUUID() string {
-	return b.UUID
-}
-
-func (b *TestDTO) SetCreatedAt(createdAt time.Time) *TestDTO {
-	b.CreatedAt = createdAt
-	return b
-}
-
-func (b *TestDTO) GetCreatedAt() time.Time {
-	return b.CreatedAt
-}
-
-func (b *TestDTO) SetUpdatedAt(updatedAt time.Time) *TestDTO {
-	b.UpdatedAt = updatedAt
-	return b
-}
-
-func (b *TestDTO) GetUpdatedAt() time.Time {
-	return b.UpdatedAt
-}
-
-func (b *TestDTO) SetDeletedAt(deletedAt time.Time) *TestDTO {
-	b.DeletedAt.Time.Time = deletedAt
-	b.DeletedAt.Time.Valid = true
-	return b
-}
-
-func (b *TestDTO) GetDeletedAt() time.Time {
-	return b.DeletedAt.Time.Time
-}
-
-func (b *TestDTO) SetActive(active bool) *TestDTO {
-	b.Active.Bool = active
-	b.Active.Valid = true
-	
-	return b
-}
-
-func (b *TestDTO) GetActive() bool {
-	return b.Active.Bool
+func (b *TestDTO) FieldsPointers() []interface{} {
+	return []interface{}{
+		&b.ID,
+		&b.UUID,
+		&b.Active,
+		&b.CreatedAt,
+		&b.UpdatedAt,
+		&b.DeletedAt,
+	}
 }

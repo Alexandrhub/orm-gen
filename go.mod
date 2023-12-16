@@ -9,6 +9,7 @@ require (
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/json-iterator/go v1.1.12
 	github.com/lib/pq v1.10.9
+	github.com/mattn/go-sqlite3 v1.14.6
 	github.com/valyala/quicktemplate v1.7.0
 	github.com/volatiletech/null/v8 v8.1.2
 	go.uber.org/zap v1.26.0

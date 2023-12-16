@@ -2,7 +2,7 @@ package models
 
 import (
 	"time"
-	
+
 	"github.com/Alexandrhub/cli-orm-gen/infrastructure/db/types"
 )
 
@@ -23,59 +23,13 @@ func (b *BaseDTO) OnCreate() []string {
 	return []string{}
 }
 
-func (b *BaseDTO) SetID(id int) *BaseDTO {
-	b.ID = id
-	return b
-}
-
-func (b *BaseDTO) GetID() int {
-	return b.ID
-}
-
-func (b *BaseDTO) SetUUID(uuid string) *BaseDTO {
-	b.UUID = uuid
-	return b
-}
-
-func (b *BaseDTO) GetUUID() string {
-	return b.UUID
-}
-
-func (b *BaseDTO) SetCreatedAt(createdAt time.Time) *BaseDTO {
-	b.CreatedAt = createdAt
-	return b
-}
-
-func (b *BaseDTO) GetCreatedAt() time.Time {
-	return b.CreatedAt
-}
-
-func (b *BaseDTO) SetUpdatedAt(updatedAt time.Time) *BaseDTO {
-	b.UpdatedAt = updatedAt
-	return b
-}
-
-func (b *BaseDTO) GetUpdatedAt() time.Time {
-	return b.UpdatedAt
-}
-
-func (b *BaseDTO) SetDeletedAt(deletedAt time.Time) *BaseDTO {
-	b.DeletedAt.Time.Time = deletedAt
-	b.DeletedAt.Time.Valid = true
-	return b
-}
-
-func (b *BaseDTO) GetDeletedAt() time.Time {
-	return b.DeletedAt.Time.Time
-}
-
-func (b *BaseDTO) SetActive(active bool) *BaseDTO {
-	b.Active.Bool = active
-	b.Active.Valid = true
-	
-	return b
-}
-
-func (b *BaseDTO) GetActive() bool {
-	return b.Active.Bool
+func (b *BaseDTO) FieldsPointers() []interface{} {
+	return []interface{}{
+		&b.ID,
+		&b.UUID,
+		&b.Active,
+		&b.CreatedAt,
+		&b.UpdatedAt,
+		&b.DeletedAt,
+	}
 }

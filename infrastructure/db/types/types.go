@@ -7,9 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	
-	"github.com/Alexandrhub/cli-orm-gen/infrastructure/decoder"
-	
+
 	"github.com/google/uuid"
 	"github.com/volatiletech/null/v8"
 )
@@ -40,7 +38,7 @@ func (x *NullString) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON метод, вызываемый json.Unmarshal
 // для экземпляр типа NullString
 func (x *NullString) UnmarshalJSON(data []byte) error {
-	err := decoder.NewDecoder().Decode(bytes.NewBuffer(data), &x.String)
+	err := NewDecoder().Decode(bytes.NewBuffer(data), &x.String)
 	if err != nil {
 		return err
 	}
@@ -48,7 +46,7 @@ func (x *NullString) UnmarshalJSON(data []byte) error {
 	if len(x.String) == 0 {
 		x.Valid = false
 	}
-	
+
 	return nil
 }
 
@@ -69,12 +67,12 @@ func (x *NullBool) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON метод, вызываемый json.Unmarshal
 // для экземпляр типа NullBool
 func (x *NullBool) UnmarshalJSON(data []byte) error {
-	err := decoder.NewDecoder().Decode(bytes.NewBuffer(data), &x.Bool)
+	err := NewDecoder().Decode(bytes.NewBuffer(data), &x.Bool)
 	if err != nil {
 		return err
 	}
 	x.Valid = true
-	
+
 	return nil
 }
 
@@ -95,12 +93,12 @@ func (x *NullInt64) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON метод, вызываемый json.Unmarshal
 // для экземпляр типа NullInt64
 func (x *NullInt64) UnmarshalJSON(data []byte) error {
-	err := decoder.NewDecoder().Decode(bytes.NewBuffer(data), &x.Int64)
+	err := NewDecoder().Decode(bytes.NewBuffer(data), &x.Int64)
 	if err != nil {
 		return err
 	}
 	x.Valid = true
-	
+
 	return nil
 }
 
@@ -121,12 +119,12 @@ func (x *NullFloat64) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON метод, вызываемый json.Unmarshal
 // для экземпляр типа NullFloat64
 func (x *NullFloat64) UnmarshalJSON(data []byte) error {
-	err := decoder.NewDecoder().Decode(bytes.NewBuffer(data), &x.Float64)
+	err := NewDecoder().Decode(bytes.NewBuffer(data), &x.Float64)
 	if err != nil {
 		return err
 	}
 	x.Valid = true
-	
+
 	return nil
 }
 
@@ -153,7 +151,7 @@ func (x *NullUUID) UnmarshalJSON(data []byte) error {
 		*x = NullUUID{}
 		return nil
 	}
-	err := decoder.NewDecoder().Decode(bytes.NewBuffer(data), &x.String)
+	err := NewDecoder().Decode(bytes.NewBuffer(data), &x.String)
 	if err != nil {
 		return err
 	}
@@ -166,7 +164,7 @@ func (x *NullUUID) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -176,7 +174,7 @@ func (x *NullUUID) Scan(value interface{}) error {
 		*x = NullUUID{}
 		return nil
 	}
-	
+
 	var dest []byte
 	switch source := value.(type) {
 	case string:
@@ -194,16 +192,16 @@ func (x *NullUUID) Scan(value interface{}) error {
 	default:
 		return errors.New("incompatible type for NullUUID")
 	}
-	
+
 	uuidRaw, err := uuid.FromBytes(dest)
 	if err != nil {
 		return err
 	}
 	x.Binary = dest
 	x.Valid = true
-	
+
 	x.String = uuidRaw.String()
-	
+
 	return nil
 }
 
@@ -214,7 +212,7 @@ func (x NullUUID) Value() (driver.Value, error) {
 	}
 	b := make([]byte, len(x.Binary))
 	copy(b, x.Binary)
-	
+
 	return b, nil
 }
 

@@ -3,7 +3,7 @@ package types
 import (
 	"database/sql"
 	"time"
-	
+
 	"github.com/google/uuid"
 	"github.com/volatiletech/null/v8"
 )
@@ -39,7 +39,7 @@ func NewNullUint64(n uint64) NullUint64 {
 	tn := NullUint64{}
 	tn.Valid = true
 	tn.Uint64.Uint64 = n
-	
+
 	return tn
 }
 
@@ -95,17 +95,17 @@ func NewNullUUID(s ...string) NullUUID {
 	if err != nil {
 		return NullUUID{}
 	}
-	
+
 	var nullUUID NullUUID
-	
+
 	nullUUID.Binary, err = uuidRaw.MarshalBinary()
 	if err != nil {
 		return NullUUID{}
 	}
-	
+
 	nullUUID.String = uuidRaw.String()
-	
+
 	nullUUID.Valid = true
-	
+
 	return nullUUID
 }
