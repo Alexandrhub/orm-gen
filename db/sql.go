@@ -4,28 +4,30 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
-	
-	"github.com/Alexandrhub/cli-orm-gen/db/adapter"
+
+	"github.com/Alexandrhub/cli-orm-gen/db/dao"
+	"github.com/Alexandrhub/cli-orm-gen/infrastructure/db/scanner"
 	"github.com/Alexandrhub/cli-orm-gen/utils"
-	
+
 	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
 )
 
 // SqlDB структура для работы с базой данных sqlx.DB и адаптером
 type SqlDB struct {
-	DB         *sqlx.DB
-	SqlAdapter *adapter.SQLAdapter
+	DB  *sqlx.DB
+	DAO *dao.DAO
 }
 
 // NewSqlDB конструктор
-func NewSqlDB(dbConf utils.DB, scanner utils.Scanner, logger *zap.Logger) (*SqlDB, error) {
+func NewSqlDB(dbConf utils.DB, scanner scanner.Scanner, logger *zap.Logger) (*SqlDB, error) {
 	var dsn string
 	var err error
 	var dbRaw *sql.DB
-	
+
 	switch dbConf.Driver {
 	case "postgres":
 		dsn = fmt.Sprintf(
@@ -48,12 +50,14 @@ func NewSqlDB(dbConf utils.DB, scanner utils.Scanner, logger *zap.Logger) (*SqlD
 		dsn = cfg.FormatDSN()
 	case "ramsql":
 		dsn = "Testing"
+	case "sqlite3": // Case for SQLite
+		dsn = dbConf.Name
 	}
-	
+
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 	timeoutExceeded := time.After(time.Second * time.Duration(dbConf.Timeout))
-	
+
 	for {
 		select {
 		case <-timeoutExceeded:
@@ -68,9 +72,9 @@ func NewSqlDB(dbConf utils.DB, scanner utils.Scanner, logger *zap.Logger) (*SqlD
 				db := sqlx.NewDb(dbRaw, dbConf.Driver)
 				db.SetMaxOpenConns(50)
 				db.SetMaxIdleConns(50)
-				sqlAdapter := adapter.NewSqlAdapter(db, dbConf, scanner)
-				
-				return &SqlDB{db, sqlAdapter}, nil
+				daoInstance := dao.NewDAO(db, dbConf, scanner)
+
+				return &SqlDB{db, daoInstance}, nil
 			}
 			logger.Error("failed to connect to the database", zap.String("dsn", dsn), zap.Error(err))
 		}

@@ -1,14 +1,20 @@
-package decoder
+package types
 
 import (
 	"io"
-	
+
 	jsoniter "github.com/json-iterator/go"
 )
 
 var defaultConfig = jsoniter.ConfigCompatibleWithStandardLibrary
 
 var decoderSingleton *Decode
+
+// Decoder интерфейс для декодирования
+type Decoder interface {
+	Decode(r io.Reader, val interface{}) error
+	Encode(w io.Writer, value interface{}) error
+}
 
 // Decode структура для декодирования jsoniter.API
 type Decode struct {
@@ -27,7 +33,7 @@ func NewDecoder(args ...jsoniter.Config) Decoder {
 	if len(args) > 0 {
 		conf = args[0].Froze()
 	}
-	
+
 	return &Decode{
 		api: conf,
 	}
@@ -39,7 +45,7 @@ func (d *Decode) Decode(r io.Reader, val interface{}) error {
 	if err := decoder.Decode(val); err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
