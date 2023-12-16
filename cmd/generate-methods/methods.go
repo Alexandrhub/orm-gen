@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -9,11 +10,32 @@ import (
 	"strings"
 )
 
+var (
+	fileName string
+)
+
+// init вызывается неявно при импорте пакета
+func init() {
+	flag.StringVar(&fileName, "fileName", "", "Directory of the file")
+	// Создаем новый флаг для вывода справки
+	helpFlag := flag.Bool("h", false, "Show help")
+	helpLongFlag := flag.Bool("help", false, "Show help")
+
+	// Парсим fileName и получаем имя файла
+	flag.Parse()
+
+	// Если установлен флаг "--help" или "-h", выводим справку и завершаем программу
+	if *helpFlag || *helpLongFlag {
+		printHelp()
+		os.Exit(0)
+	}
+}
+
 // Заполняем структуру методами для дальнейшей генерации orm crud
+// example: go build cmd/generate-methods/methods.go -fileName="cmd/generate-methods/filename.go"
 func main() {
-	filename := "cmd/generate-methods/filename.go"
 	// Извлечение информации о структуре
-	data, err := ReflectFile(filename)
+	data, err := ReflectFile(fileName)
 	if err != nil {
 		panic(err)
 	}
@@ -23,10 +45,20 @@ func main() {
 			continue
 		}
 		generatedCode := generateMethods(st)
-		if err := appendToFile(filename, "\n"+generatedCode); err != nil {
+		if err := appendToFile(fileName, "\n"+generatedCode); err != nil {
 			panic(err)
 		}
 	}
+}
+
+// printHelp функция вывода справки
+func printHelp() {
+	fmt.Println("Usage:")
+	fmt.Println("  app -h           Show help")
+	fmt.Println("  app --entity=<file> --output=<directory>")
+	fmt.Println()
+	fmt.Println("Flags:")
+	flag.PrintDefaults()
 }
 
 type FieldInfo struct {
