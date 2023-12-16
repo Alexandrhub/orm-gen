@@ -10,45 +10,43 @@ import (
 )
 
 type {{ .EntityNameUppercase }}Storage struct {
-    adapter adapter.SQLAdapter
+    dto dao.DAO
 }
 
-func New{{ .EntityNameUppercase}}Storage(sqlAdapter adapter.SQLAdapter) {{ .EntityNameUppercase }}Storage {
-    return {{ .EntityNameUppercase }}Storage{adapter: sqlAdapter}
+func New{{ .EntityNameUppercase}}Storage(dto dao.DAO) {{ .EntityNameUppercase }}Storage {
+    return {{ .EntityNameUppercase }}Storage{dto: dto}
 }
 
 func ({{ .EntityFirstLetter }} *{{ .EntityNameUppercase }}Storage) Create(ctx context.Context, dto models.{{ .EntityName }}) error {
-    return {{ .EntityFirstLetter }}.adapter.Create(ctx, &dto)
+    return {{ .EntityFirstLetter }}.dto.Create(ctx, &dto)
 }
 
-func ({{ .EntityFirstLetter }} *{{ .EntityNameUppercase }}Storage) Update(ctx context.Context, dto models.{{ .EntityName }}) error {
-	return {{ .EntityFirstLetter }}.adapter.Update(
+func ({{ .EntityFirstLetter }} *{{ .EntityNameUppercase }}Storage) Upsert(ctx context.Context, dto []models.{{ .EntityName }}) error {
+    var entities []scanner.Tabler
+    for _, d := range dto {
+    		entities = append(entities, &d)
+    	}
+
+	return {{ .EntityFirstLetter }}.dto.Upsert(
 		ctx,
-		&dto,
-		utils.Condition{
-			Equal: map[string]interface{}{"id": dto.GetID()},
-		},
-		utils.Update,
+		entities,
 	)
 }
 
-func ({{ .EntityFirstLetter }} *{{ .EntityNameUppercase }}Storage) GetByID(ctx context.Context, {{ .EntityNameLowercase }}ID int) (models.{{ .EntityName }}, error) {
-	var list []models.{{ .EntityName }}
-	err := {{ .EntityFirstLetter }}.adapter.List(ctx, &list, "{{ .TableName }}", utils.Condition{
-		Equal: map[string]interface{}{"id": {{ .EntityNameLowercase }}ID},
-	})
+func ({{ .EntityFirstLetter }} *{{ .EntityNameUppercase }}Storage) GetCount(ctx context.Context, dto models.{{ .EntityName }}, condition utils.Condition) (uint64, error) {
+	var count uint64
+	count, err := {{ .EntityFirstLetter }}.dto.GetCount(ctx, &dto, condition)
 	if err != nil {
-		return models.{{ .EntityName }}{}, err
+		return 0,  fmt.Errorf("{{ .EntityNameLowercase }} storage: GetCount not found")
 	}
-	if len(list) < 1 {
-		return models.{{ .EntityName }}{}, fmt.Errorf("{{ .EntityNameLowercase }} storage: GetByID not found")
-	}
-	return list[0], err
+
+	return count, nil
 }
 
-func ({{ .EntityFirstLetter }} *{{ .EntityNameUppercase }}Storage) GetList(ctx context.Context) ([]models.{{ .EntityName }}, error) {
+func ({{ .EntityFirstLetter }} *{{ .EntityNameUppercase }}Storage) List(ctx context.Context, condition utils.Condition) ([]models.{{ .EntityName }}, error) {
 	var list []models.{{ .EntityName }}
-	err := {{ .EntityFirstLetter }}.adapter.List(ctx, &list, "{{ .TableName }}", utils.Condition{Equal: map[string]interface{}{"deleted_at": nil}})
+	var table models.{{ .EntityName }}
+	err := {{ .EntityFirstLetter }}.dto.List(ctx, &list, &table, condition)
 	if err != nil {
 		return nil, err
 	}
@@ -56,20 +54,11 @@ func ({{ .EntityFirstLetter }} *{{ .EntityNameUppercase }}Storage) GetList(ctx c
 	return list, nil
 }
 
-func ({{ .EntityFirstLetter }} *{{ .EntityNameUppercase }}Storage) Delete(ctx context.Context, {{ .EntityNameLowercase }}ID int) error {
-	dto, err := {{ .EntityFirstLetter }}.GetByID(ctx, {{ .EntityNameLowercase }}ID)
-	if err != nil {
-		return err
-	}
-
-	dto.SetDeletedAt(time.Now())
-
-	return {{ .EntityFirstLetter }}.adapter.Update(
+func ({{ .EntityFirstLetter }} *{{ .EntityNameUppercase }}Storage) Update(ctx context.Context, dto models.{{ .EntityName }}, condition utils.Condition) error {
+	return {{ .EntityFirstLetter }}.dto.Update(
 		ctx,
 		&dto,
-		utils.Condition{
-			Equal: map[string]interface{}{"id": dto.GetID()},
-		},
-		utils.Update,
+		condition,
+		"update",
 	)
 }

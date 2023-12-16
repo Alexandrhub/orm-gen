@@ -20,6 +20,7 @@ type Scanner interface {
 type Tabler interface {
 	TableName() string
 	OnCreate() []string
+	FieldsPointers() []interface{}
 }
 
 // TableUpdater интерфейс для обновления таблиц
@@ -42,6 +43,11 @@ type TableScanner struct {
 	tables map[string]Table
 }
 
+// NewTableScanner конструктор
+func NewTableScanner() Scanner {
+	return &TableScanner{}
+}
+
 // RegisterTable регистрация сущностей
 func (t *TableScanner) RegisterTable(entities ...Tabler) {
 	tableEntities := make(map[string]Tabler, len(entities))
@@ -49,7 +55,7 @@ func (t *TableScanner) RegisterTable(entities ...Tabler) {
 	for i := range entities {
 		tableEntities[entities[i].TableName()] = entities[i]
 	}
-	
+
 	for name, entity := range tableEntities {
 		table := Table{
 			Name:            name,
@@ -58,18 +64,18 @@ func (t *TableScanner) RegisterTable(entities ...Tabler) {
 			Entity:          entity,
 		}
 		reflected := reflect.TypeOf(entity).Elem()
-		
+
 		for i := 0; i < reflected.NumField(); i++ {
 			// Get the field, returns https://golang.org/pkg/reflect/#StructField
 			structField := reflected.Field(i)
 			// Get the structField tag value
 			fieldName := structField.Tag.Get("db")
-			
+
 			if fieldName == "" || fieldName == "-" {
 				continue
 			}
 			table.OperationFields[AllFields] = append(table.OperationFields[AllFields], fieldName)
-			
+
 			field := Field{
 				Name:    fieldName,
 				Type:    structField.Tag.Get("db_type"),
@@ -97,7 +103,7 @@ func (t *TableScanner) RegisterTable(entities ...Tabler) {
 			}
 			table.Fields = append(table.Fields, field)
 			table.FieldsMap[field.Name] = field
-			
+
 			opsRaw := structField.Tag.Get("db_ops")
 			ops := strings.Split(opsRaw, ",")
 			if opsRaw != "" {
@@ -106,7 +112,7 @@ func (t *TableScanner) RegisterTable(entities ...Tabler) {
 				}
 			}
 		}
-		
+
 		t.tables[name] = table
 	}
 }
