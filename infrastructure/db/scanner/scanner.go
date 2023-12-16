@@ -11,7 +11,8 @@ const AllFields = "all"
 // Scanner интерфейс для сканирования таблиц
 type Scanner interface {
 	RegisterTable(entities ...Tabler)
-	OperationFields(tableName, operation string) []string
+	OperationFields(table Tabler, operation string) []*Field
+	OperationFieldsName(tableName string, operation string) []string
 	Table(tableName string) Table
 	Tables() map[string]Table
 }
@@ -31,10 +32,10 @@ type TableUpdater interface {
 // Table структура таблицы
 type Table struct {
 	Name            string
-	Fields          []Field
-	FieldsMap       map[string]Field
+	Fields          []*Field
+	FieldsMap       map[string]*Field
 	Constraints     []Constraint
-	OperationFields map[string][]string
+	OperationFields map[string][]*Field
 	Entity          Tabler
 }
 
@@ -59,8 +60,8 @@ func (t *TableScanner) RegisterTable(entities ...Tabler) {
 	for name, entity := range tableEntities {
 		table := Table{
 			Name:            name,
-			FieldsMap:       map[string]Field{},
-			OperationFields: map[string][]string{},
+			FieldsMap:       make(map[string]*Field),
+			OperationFields: make(map[string][]*Field),
 			Entity:          entity,
 		}
 		reflected := reflect.TypeOf(entity).Elem()
@@ -74,9 +75,9 @@ func (t *TableScanner) RegisterTable(entities ...Tabler) {
 			if fieldName == "" || fieldName == "-" {
 				continue
 			}
-			table.OperationFields[AllFields] = append(table.OperationFields[AllFields], fieldName)
 
-			field := Field{
+			field := &Field{
+				IDx:     i,
 				Name:    fieldName,
 				Type:    structField.Tag.Get("db_type"),
 				Default: structField.Tag.Get("db_default"),
@@ -98,7 +99,7 @@ func (t *TableScanner) RegisterTable(entities ...Tabler) {
 				}
 			}
 			if field.Constraint.Index {
-				field.Constraint.Field = &field
+				field.Constraint.Field = field
 				table.Constraints = append(table.Constraints, field.Constraint)
 			}
 			table.Fields = append(table.Fields, field)
@@ -108,18 +109,38 @@ func (t *TableScanner) RegisterTable(entities ...Tabler) {
 			ops := strings.Split(opsRaw, ",")
 			if opsRaw != "" {
 				for j := range ops {
-					table.OperationFields[ops[j]] = append(table.OperationFields[ops[j]], fieldName)
+					table.OperationFields[ops[j]] = append(table.OperationFields[ops[j]], field)
 				}
 			}
+
+			table.OperationFields[AllFields] = append(table.OperationFields[AllFields], field)
 		}
 
 		t.tables[name] = table
 	}
 }
 
+// OperationFieldsName получение полей для операции над таблицей
+func (t *TableScanner) OperationFieldsName(tableName string, operation string) []string {
+	fields := t.tables[tableName].OperationFields[operation]
+	var fieldsName []string
+	for i := range fields {
+		fieldsName = append(fieldsName, fields[i].Name)
+	}
+
+	return fieldsName
+}
+
 // OperationFields получение полей для операции над таблицей
-func (t *TableScanner) OperationFields(tableName, operation string) []string {
-	return t.tables[tableName].OperationFields[operation]
+func (t *TableScanner) OperationFields(table Tabler, operation string) []*Field {
+	fields := t.tables[table.TableName()].OperationFields[operation]
+	pointers := table.FieldsPointers()
+
+	for i := range fields {
+		fields[i].Pointer = pointers[fields[i].IDx]
+	}
+
+	return fields
 }
 
 // Table получение таблицы
@@ -134,11 +155,13 @@ func (t *TableScanner) Tables() map[string]Table {
 
 // Field структура полей
 type Field struct {
+	IDx        int
 	Name       string
 	Type       string
 	Default    string
 	Constraint Constraint
 	Table      *Table
+	Pointer    interface{}
 }
 
 // Constraint структура ограничения
