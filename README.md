@@ -87,7 +87,7 @@ func (b *BaseDTO) GetDeletedAt() time.Time {
 func (b *BaseDTO) SetActive(active bool) *BaseDTO {
 	b.Active.Bool = active
 	b.Active.Valid = true
-	
+
 	return b
 }
 
