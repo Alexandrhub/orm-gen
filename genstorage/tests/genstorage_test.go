@@ -113,7 +113,9 @@ func TestStorage_CreateStorageFiles(t *testing.T) {
 
 func TestGetTableName(t *testing.T) {
 	type args struct {
-		fileName string
+		fileName  string
+		outputDir string
+		helpFlag  bool
 	}
 	tests := []struct {
 		name    string
