@@ -6,7 +6,13 @@ import (
 	"time"
 )
 
-const AllFields = "all"
+const (
+	AllFields = "all"
+	Create    = "create"
+	Update    = "update"
+	Upsert    = "upsert"
+	Conflict  = "conflict"
+)
 
 // Scanner интерфейс для сканирования таблиц
 type Scanner interface {

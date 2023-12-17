@@ -24,15 +24,14 @@ func init() {
 	flag.StringVar(&fileName, "entity", "", "Path name of entity file")
 	flag.StringVar(&outputDir, "output", "./storage/", "Output directory")
 	// Создаем новый флаг для вывода справки
-	helpFlag := flag.Bool("h", false, "Show help")
-	helpLongFlag := flag.Bool("help", false, "Show help")
-	flag.Parse()
+	//helpFlag := flag.Bool("h", false, "Show help")
+	//helpLongFlag := flag.Bool("help", false, "Show help")
 
 	// Если установлен флаг "--help" или "-h", выводим справку и завершаем программу
-	if *helpFlag || *helpLongFlag {
-		printHelp()
-		os.Exit(0)
-	}
+	////if *helpFlag || *helpLongFlag {
+	////	printHelp()
+	////	os.Exit(0)
+	////}
 }
 
 // printHelp функция вывода справки
@@ -65,6 +64,8 @@ type Storage struct {
 
 // GetFileName функция парсинга имени файла из флага
 func GetFileName() (string, error) {
+	flag.Parse()
+
 	if fileName == "" {
 		flag.PrintDefaults()
 		return "", fmt.Errorf("empty flag")

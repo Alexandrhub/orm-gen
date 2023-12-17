@@ -8,6 +8,7 @@ import (
 
 	"github.com/Alexandrhub/cli-orm-gen/infrastructure/db/scanner"
 	"github.com/Alexandrhub/cli-orm-gen/utils"
+
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 )
