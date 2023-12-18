@@ -15,21 +15,21 @@ type TestDTO struct {
 	DeletedAt types.NullTime `json:"deleted_at" db:"deleted_at" db_ops:"update" db_type:"timestamp" db_default:"default null" db_index:"index" db_ops:"deleted_at" mapper:"deleted_at"`
 }
 
-func (b *TestDTO) TableName() string {
-	return "base"
+func (t *TestDTO) TableName() string {
+	return "TestDTO"
 }
 
-func (b *TestDTO) OnCreate() []string {
+func (t *TestDTO) OnCreate() []string {
 	return []string{}
 }
 
-func (b *TestDTO) FieldsPointers() []interface{} {
+func (t *TestDTO) FieldsPointers() []interface{} {
 	return []interface{}{
-		&b.ID,
-		&b.UUID,
-		&b.Active,
-		&b.CreatedAt,
-		&b.UpdatedAt,
-		&b.DeletedAt,
+		&t.ID,
+		&t.UUID,
+		&t.Active,
+		&t.CreatedAt,
+		&t.UpdatedAt,
+		&t.DeletedAt,
 	}
 }
