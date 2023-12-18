@@ -1,11 +1,14 @@
 package genstorage
 
 import (
+	"bufio"
+	"bytes"
 	"flag"
 	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"io"
 	"log"
 	"os"
 	"path"
@@ -14,6 +17,13 @@ import (
 	"text/template"
 )
 
+// пути до шаблонов
+const (
+	storageTemplate   = "./genstorage/templates/storageTemplate.tmpl"
+	interfaceTemplate = "./genstorage/templates/interfaceTemplate.tmpl"
+)
+
+// флаги командной строки
 var (
 	fileName  string
 	outputDir string
@@ -22,7 +32,7 @@ var (
 // init вызывается неявно при импорте пакета
 func init() {
 	flag.StringVar(&fileName, "entity", "", "Path name of entity file")
-	flag.StringVar(&outputDir, "output", "./storage/", "Output directory")
+	flag.StringVar(&outputDir, "output", "./repository/", "Output directory")
 	// Создаем новый флаг для вывода справки
 	//helpFlag := flag.Bool("h", false, "Show help")
 	//helpLongFlag := flag.Bool("help", false, "Show help")
@@ -32,6 +42,90 @@ func init() {
 	////	printHelp()
 	////	os.Exit(0)
 	////}
+}
+
+// NewStorage конструктор
+func NewStorage() (*Storage, error) {
+	var (
+		tableName, structName string
+		err                   error
+	)
+
+	fileName, err = GetFileName()
+	if err != nil {
+		return nil, err
+	}
+	directory := outputDir
+	if outputDir[len(outputDir)-1] != '/' {
+		directory += "/"
+	}
+	if outputDir[0] != '.' || outputDir[1] != '/' {
+		directory = "./storage/"
+	}
+
+	tableName, err = GetTableName(fileName)
+	if err != nil {
+		return nil, fmt.Errorf("GetTableName error %v", err)
+	}
+	if tableName == "" {
+		log.Println("Table name not found, use base model")
+		tableName = "base"
+		structName = "BaseDTO"
+		fileName = "base"
+	} else {
+		structName, err = GetStructName(fileName)
+		if err != nil {
+			return nil, fmt.Errorf("GetStructName error %v", err)
+		}
+	}
+	// выделяем имя файла
+	fileName = strings.TrimSuffix(path.Base(fileName), ".go")
+
+	// убираем возможные подчеркивания, преобразуем первую букву каждого слова tableName в верхний регистр и удаляем пробелы
+	formattedTableName := strings.ReplaceAll(strings.Title(strings.ReplaceAll(tableName, "_", " ")), " ", "")
+
+	// переводим tableName в нижний регистр для заполнения шаблона
+	tableNameLowercase := strings.ToLower(formattedTableName)
+
+	// выделяем первую букву tableName для заполнения шаблона
+	firstLetter := string(tableNameLowercase[0])
+
+	// ищем файл go.mod для дальнейшего парсинга
+	rawData, err := SearchFile("go.mod")
+	if err != nil {
+		return nil, err
+	}
+
+	// выделяем модульную строку
+	moduleLine, err := ExtractModuleLine(rawData)
+	if err != nil {
+		return nil, err
+	}
+
+	// создаем шаблоны
+	storageTemplate, err := NewStorageTemplate()
+	if err != nil {
+		return nil, err
+	}
+	interfaceTemplate, err := NewInterfaceTemplate()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Storage{
+		FileName:          fileName,
+		OutputDir:         directory,
+		StorageTemplate:   storageTemplate,
+		InterfaceTemplate: interfaceTemplate,
+		TemplateData: TemplateData{
+			PackageName:         moduleLine,
+			TableName:           tableName,
+			EntityName:          structName,
+			EntityNameLowercase: tableNameLowercase,
+			EntityNameUppercase: formattedTableName,
+			EntityFirstLetter:   firstLetter,
+		},
+	}, nil
 }
 
 // printHelp функция вывода справки
@@ -46,6 +140,7 @@ func printHelp() {
 
 // TemplateData структура с данными для заполнения шаблона
 type TemplateData struct {
+	PackageName         string // название пакета
 	TableName           string // имя таблицы
 	EntityName          string // название структуры
 	EntityNameLowercase string // название структуры в нижнем регистре
@@ -150,80 +245,64 @@ func GetStructName(fileName string) (string, error) {
 	return structName, nil
 }
 
-// NewStorage конструктор
-func NewStorage() (*Storage, error) {
-	var (
-		tableName, structName string
-		err                   error
-	)
-
-	fileName, err = GetFileName()
+// SearchFile функция поиска по файлу
+func SearchFile(confName string) ([]byte, error) {
+	wd, err := os.Getwd()
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
-	directory := outputDir
-	if outputDir[len(outputDir)-1] != '/' {
-		directory += "/"
+	fmt.Println(wd)
+	var coursePath string
+	coursePath = wd
+	courseConfPath := filepath.Join(coursePath, confName)
+	for {
+		if len(strings.Split(coursePath, "/")) < 2 {
+			return nil, fmt.Errorf("%s not found reached: %s", confName, coursePath)
+		}
+		if _, err = os.Stat(courseConfPath); os.IsNotExist(err) {
+			coursePath = filepath.Dir(coursePath)
+			courseConfPath = filepath.Join(coursePath, confName)
+			continue
+		}
+		break
 	}
-	if outputDir[0] != '.' || outputDir[1] != '/' {
-		directory = "./storage/"
+	var rawData []byte
+	rawData, err = os.ReadFile(courseConfPath)
+	if err != nil {
+		return nil, fmt.Errorf("cannot open %s path: %s", confName, courseConfPath)
 	}
 
-	tableName, err = GetTableName(fileName)
-	if err != nil {
-		return nil, fmt.Errorf("GetTableName error %v", err)
-	}
-	if tableName == "" {
-		log.Println("Table name not found, use base model")
-		tableName = "base"
-		structName = "BaseDTO"
-		fileName = "base"
-	} else {
-		structName, err = GetStructName(fileName)
+	return rawData, nil
+}
+
+// ExtractModuleLine парсит модульную строку из файла go.mod
+func ExtractModuleLine(rawData []byte) (string, error) {
+	reader := bytes.NewReader(rawData)
+	bufReader := bufio.NewReader(reader)
+
+	for {
+		line, _, err := bufReader.ReadLine()
+		if err == io.EOF {
+			break
+		}
+
 		if err != nil {
-			return nil, fmt.Errorf("GetStructName error %v", err)
+			return "", fmt.Errorf("failed to read go.mod file: %s", err.Error())
+		}
+
+		if bytes.Contains(line, []byte("module")) {
+			moduleLine := string(line)
+			moduleLine = string(bytes.TrimSpace(bytes.TrimPrefix(line, []byte("module"))))
+			return moduleLine, nil
 		}
 	}
-	// выделяем имя файла
-	fileName = strings.TrimSuffix(path.Base(fileName), ".go")
 
-	// убираем возможные подчеркивания, преобразуем первую букву каждого слова tableName в верхний регистр и удаляем пробелы
-	formattedTableName := strings.ReplaceAll(strings.Title(strings.ReplaceAll(tableName, "_", " ")), " ", "")
-
-	// переводим tableName в нижний регистр для заполнения шаблона
-	tableNameLowercase := strings.ToLower(formattedTableName)
-
-	// выделяем первую букву tableName для заполнения шаблона
-	firstLetter := string(tableNameLowercase[0])
-
-	// создаем шаблоны
-	storageTemplate, err := NewStorageTemplate()
-	if err != nil {
-		return nil, err
-	}
-	interfaceTemplate, err := NewInterfaceTemplate()
-	if err != nil {
-		return nil, err
-	}
-
-	return &Storage{
-		FileName:          fileName,
-		OutputDir:         directory,
-		StorageTemplate:   storageTemplate,
-		InterfaceTemplate: interfaceTemplate,
-		TemplateData: TemplateData{
-			TableName:           tableName,
-			EntityName:          structName,
-			EntityNameLowercase: tableNameLowercase,
-			EntityNameUppercase: formattedTableName,
-			EntityFirstLetter:   firstLetter,
-		},
-	}, nil
+	return "", fmt.Errorf("failed to find module line in go.mod file")
 }
 
 // NewStorageTemplate конструктор storage шаблона
 func NewStorageTemplate() (*template.Template, error) {
-	tmpl, err := template.ParseFiles("./genstorage/templates/storageTemplate.tmpl")
+	tmpl, err := template.ParseFiles(storageTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +311,7 @@ func NewStorageTemplate() (*template.Template, error) {
 
 // NewInterfaceTemplate конструктор interface шаблона
 func NewInterfaceTemplate() (*template.Template, error) {
-	tmpl, err := template.ParseFiles("./genstorage/templates/interfaceTemplate.tmpl")
+	tmpl, err := template.ParseFiles(interfaceTemplate)
 	if err != nil {
 		return nil, err
 	}

@@ -1,4 +1,4 @@
-package storage
+package repository
 
 import (
 	"context"
@@ -11,11 +11,11 @@ import (
 )
 
 type BaseStorage struct {
-	dto dao.DAO
+	dto *dao.DAO
 }
 
-func NewBaseStorage(dto dao.DAO) BaseStorage {
-	return BaseStorage{dto: dto}
+func NewBaseStorage(dto *dao.DAO) *BaseStorage {
+	return &BaseStorage{dto: dto}
 }
 
 func (b *BaseStorage) Create(ctx context.Context, dto models.BaseDTO) error {

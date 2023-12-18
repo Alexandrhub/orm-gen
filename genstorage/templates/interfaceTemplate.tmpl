@@ -1,10 +1,10 @@
-package storage
+package repository
 
 import (
 	"context"
 
-	"github.com/Alexandrhub/cli-orm-gen/genstorage/models"
-	"github.com/Alexandrhub/cli-orm-gen/utils"
+	"{{ .PackageName }}/genstorage/models"
+	"{{ .PackageName }}/utils"
 )
 
 type I{{ .EntityNameUppercase }}DTO interface {
