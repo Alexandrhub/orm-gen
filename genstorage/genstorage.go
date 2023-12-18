@@ -23,38 +23,13 @@ const (
 	interfaceTemplate = "./genstorage/templates/interfaceTemplate.tmpl"
 )
 
-// флаги командной строки
-var (
-	fileName  string
-	outputDir string
-)
-
-// init вызывается неявно при импорте пакета
-func init() {
-	flag.StringVar(&fileName, "entity", "", "Path name of entity file")
-	flag.StringVar(&outputDir, "output", "./repository/", "Output directory")
-	// Создаем новый флаг для вывода справки
-	//helpFlag := flag.Bool("h", false, "Show help")
-	//helpLongFlag := flag.Bool("help", false, "Show help")
-
-	// Если установлен флаг "--help" или "-h", выводим справку и завершаем программу
-	////if *helpFlag || *helpLongFlag {
-	////	printHelp()
-	////	os.Exit(0)
-	////}
-}
-
 // NewStorage конструктор
-func NewStorage() (*Storage, error) {
+func NewStorage(fileName, outputDir string) (*Storage, error) {
 	var (
 		tableName, structName string
 		err                   error
 	)
 
-	fileName, err = GetFileName()
-	if err != nil {
-		return nil, err
-	}
 	directory := outputDir
 	if outputDir[len(outputDir)-1] != '/' {
 		directory += "/"
@@ -155,17 +130,6 @@ type Storage struct {
 	StorageTemplate   *template.Template
 	InterfaceTemplate *template.Template
 	TemplateData      TemplateData
-}
-
-// GetFileName функция парсинга имени файла из флага
-func GetFileName() (string, error) {
-	flag.Parse()
-
-	if fileName == "" {
-		flag.PrintDefaults()
-		return "", fmt.Errorf("empty flag")
-	}
-	return fileName, nil
 }
 
 // GetTableName функция парсинга имени таблицы из метода TableName в файле

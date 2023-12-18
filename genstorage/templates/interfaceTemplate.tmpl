@@ -7,7 +7,7 @@ import (
 	"{{ .PackageName }}/utils"
 )
 
-type I{{ .EntityNameUppercase }}DTO interface {
+type I{{ .EntityNameUppercase }} interface {
 	Create(ctx context.Context, dto models.{{ .EntityName }}) error
 	Upsert(ctx context.Context, dto []models.{{ .EntityName }}) error
 	GetCount(ctx context.Context, dto models.{{ .EntityName }}, condition utils.Condition) (uint64, error)
