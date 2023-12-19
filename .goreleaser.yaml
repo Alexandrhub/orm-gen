@@ -1,6 +1,6 @@
 ---
 builds:
-  - id: demo-app
+  - id: repogen
     goos: &goos-defs
       - linux
       - darwin
@@ -11,14 +11,14 @@ builds:
       - arm64
     env:
       - CGO_ENABLED=0
-    binary: demo-app
+    binary: repogen
     ldflags:
       - "-X main.buildVersion={{.Version}} -X main.buildCommit={{.ShortCommit}}"
 
 archives:
-  - id: demo-app
+  - id: repogen
     builds:
-      - demo-app
+      - repogen
     name_template: "demo-app_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
     format_overrides:
       - goos: windows
