@@ -1,4 +1,4 @@
-package cli_orm_gen
+package cli_orm
 
 import (
 	"github.com/Alexandrhub/cli-orm-gen/db"

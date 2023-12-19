@@ -1,6 +1,5 @@
 ---
 builds:
-  - main: ./cmd/cli-orm
   - id: demo-app
     goos: &goos-defs
       - linux
