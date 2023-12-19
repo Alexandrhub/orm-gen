@@ -7,9 +7,10 @@ package migrate
 //line alter_table.qtpl:1
 import (
 	"github.com/Alexandrhub/cli-orm-gen/infrastructure/db/scanner"
+)
 
 //line alter_table.qtpl:5
-
+import (
 	qtio422016 "io"
 
 	qt422016 "github.com/valyala/quicktemplate"
