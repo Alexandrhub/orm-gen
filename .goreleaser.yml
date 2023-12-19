@@ -1,5 +1,5 @@
 builds:
-  - main: ./cmd/cli-orm/
+  - main: ./cmd/cli-orm
   - binary: repogen
     goos:
       - darwin
