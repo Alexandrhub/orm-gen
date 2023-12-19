@@ -8,10 +8,9 @@ package migrate
 import (
 	"github.com/Alexandrhub/cli-orm-gen/infrastructure/db/scanner"
 	"github.com/Alexandrhub/cli-orm-gen/utils"
-)
 
 //line create_table.sql.qtpl:6
-import (
+
 	qtio422016 "io"
 
 	qt422016 "github.com/valyala/quicktemplate"
